@@ -43,10 +43,12 @@ pipeline {
 
         stage('Slack Notification') {
             steps {
-                script {
-                    def msg = "✅ *Build #${env.BUILD_ID}* deployed successfully!\n🔗 ${env.RENDER_URL}"
-                    slackSend(channel: "${env.SLACK_CHANNEL}", message: msg, webhookUrl: "${env.SLACK_WEBHOOK}")
-                }
+                echo '📢 Sending Slack notification...'
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text": "✅ *Build #${env.BUILD_ID}* deployed successfully!\\n🔗 ${env.RENDER_URL}"}' \
+                    "${env.SLACK_WEBHOOK}"
+                """
             }
         }
     }
@@ -54,7 +56,7 @@ pipeline {
     post {
         failure {
             echo '❌ Build failed. Sending notifications...'
-            
+
             mail to: 'kinuthia.abraham@student.moringaschool.com',
                  subject: "❌ Jenkins Build Failed: Build #${env.BUILD_ID}",
                  body: """Build failed.
@@ -63,9 +65,11 @@ Check Jenkins logs to debug the issue.
 Project URL: ${env.RENDER_URL}
 Build URL: ${env.BUILD_URL}"""
 
-            slackSend(channel: "${env.SLACK_CHANNEL}",
-                      message: "❌ *Build #${env.BUILD_ID} FAILED!*\nCheck logs: ${env.BUILD_URL}",
-                      webhookUrl: "${env.SLACK_WEBHOOK}")
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text": "❌ *Build #${env.BUILD_ID} FAILED!*\\nCheck logs: ${env.BUILD_URL}"}' \
+                "${env.SLACK_WEBHOOK}"
+            """
         }
     }
 }
