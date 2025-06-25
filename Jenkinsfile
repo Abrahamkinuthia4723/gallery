@@ -8,12 +8,18 @@ pipeline {
     environment {
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         SLACK_CHANNEL = "#Kinuthia_IP1"
-        SLACK_WEBHOOK = credentials('slack-webhook')
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
         ENABLE_EMAIL = "false"
     }
 
     stages {
+
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning repository'
+                git 'https://github.com/Abrahamkinuthia4723/gallery.git'
+            }
+        }
 
         stage('Install Dependencies') {
             steps {
@@ -38,7 +44,7 @@ pipeline {
 
         stage('Deploy to Render') {
             environment {
-                NODE_ENV = 'production' 
+                NODE_ENV = 'production'
             }
             steps {
                 echo 'Triggering deployment to Render'
@@ -51,11 +57,10 @@ pipeline {
         stage('Send Slack Notification') {
             steps {
                 echo 'Sending Slack notification'
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text": "Build #${env.BUILD_ID} deployed successfully. Project URL: ${env.RENDER_URL}"}' \
-                    "${SLACK_WEBHOOK}"
-                """
+                slackSend(
+                    channel: "${SLACK_CHANNEL}",
+                    message: "Build #${env.BUILD_ID} deployed successfully. Project URL: ${env.RENDER_URL}"
+                )
             }
         }
     }
@@ -66,24 +71,23 @@ pipeline {
 
             script {
                 if (env.ENABLE_EMAIL == 'true') {
-                    mail to: 'kinuthia.abraham@student.moringaschool.com',
-                         subject: "Jenkins Build Failed: Build #${env.BUILD_ID}",
-                         body: """
-The build has failed.
-
-Check the Jenkins logs for more details.
+                    emailext(
+                        subject: "Jenkins Build Failed: #${env.BUILD_ID}",
+                        body: """The build has failed.
 
 Project URL: ${env.RENDER_URL}
-Build URL: ${env.BUILD_URL}
-                         """
+Build URL: ${env.BUILD_URL}""",
+                        to: "kinuthia.abraham@student.moringaschool.com",
+                        mimeType: 'text/plain',
+                        attachLog: true
+                    )
                 }
             }
 
-            sh """
-                curl -X POST -H 'Content-type: application/json' \
-                --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
-                "${SLACK_WEBHOOK}"
-            """
+            slackSend(
+                channel: "${SLACK_CHANNEL}",
+                message: "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"
+            )
         }
     }
 }
