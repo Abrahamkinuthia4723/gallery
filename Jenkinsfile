@@ -14,7 +14,6 @@ pipeline {
     }
 
     stages {
-
         stage('Clone Repository') {
             steps {
                 echo 'Cloning repository'
