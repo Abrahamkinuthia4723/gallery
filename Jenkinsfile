@@ -77,13 +77,11 @@ Build URL: ${env.BUILD_URL}
                 }
             }
 
-            node {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
-                    "${env.SLACK_WEBHOOK}"
-                """
-            }
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
+                "${env.SLACK_WEBHOOK}"
+            """
         }
     }
 }
