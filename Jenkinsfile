@@ -10,6 +10,7 @@ pipeline {
         RENDER_DEPLOY_URL = "https://api.render.com/deploy/srv-d1cpa13ipnbc73c215r0"
         SLACK_CHANNEL = "#Kinuthia_IP1"
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
+        SLACK_WEBHOOK = credentials('slack-webhook')
         ENABLE_EMAIL = "false"
     }
 
@@ -57,10 +58,11 @@ pipeline {
         stage('Send Slack Notification') {
             steps {
                 echo 'Sending Slack notification'
-                slackSend(
-                    channel: "${SLACK_CHANNEL}",
-                    message: "Build #${env.BUILD_ID} deployed successfully.\nProject URL: ${env.RENDER_URL}"
-                )
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"Build #${env.BUILD_ID} deployed successfully.\\nProject URL: ${env.RENDER_URL}"}' \
+                    ${SLACK_WEBHOOK}
+                """
             }
         }
     }
@@ -84,10 +86,12 @@ Build URL: ${env.BUILD_URL}""",
                 }
             }
 
-            slackSend(
-                channel: "${SLACK_CHANNEL}",
-                message: "Build #${env.BUILD_ID} FAILED.\nCheck logs: ${env.BUILD_URL}"
-            )
+            echo 'Sending Slack failure notification'
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"Build #${env.BUILD_ID} FAILED.\\nCheck logs: ${env.BUILD_URL}"}' \
+                ${SLACK_WEBHOOK}
+            """
         }
     }
 }
