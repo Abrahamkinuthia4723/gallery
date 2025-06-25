@@ -6,7 +6,6 @@ pipeline {
     }
 
     environment {
-        NODE_ENV = "production"
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         SLACK_CHANNEL = "#Kinuthia_IP1"
         SLACK_WEBHOOK = credentials('slack-webhook')
@@ -38,6 +37,9 @@ pipeline {
         }
 
         stage('Deploy to Render') {
+            environment {
+                NODE_ENV = 'production' 
+            }
             steps {
                 echo 'Triggering deployment to Render'
                 sh """
@@ -52,7 +54,7 @@ pipeline {
                 sh """
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{"text": "Build #${env.BUILD_ID} deployed successfully. Project URL: ${env.RENDER_URL}"}' \
-                    "${env.SLACK_WEBHOOK}"
+                    "${SLACK_WEBHOOK}"
                 """
             }
         }
@@ -80,7 +82,7 @@ Build URL: ${env.BUILD_URL}
             sh """
                 curl -X POST -H 'Content-type: application/json' \
                 --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
-                "${env.SLACK_WEBHOOK}"
+                "${SLACK_WEBHOOK}"
             """
         }
     }
