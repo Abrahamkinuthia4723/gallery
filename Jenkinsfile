@@ -10,11 +10,12 @@ pipeline {
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         SLACK_CHANNEL = "#Kinuthia_IP1"
         SLACK_WEBHOOK = credentials('slack-webhook')
-        RENDER_DEPLOY_KEY = credentials('render-api-key')
+        RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
         ENABLE_EMAIL = "false"
     }
 
     stages {
+
         stage('Install Dependencies') {
             steps {
                 echo 'Installing dependencies'
@@ -22,14 +23,14 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Project') {
             steps {
                 echo 'Building the project'
                 sh 'npm run build'
             }
         }
 
-        stage('Test') {
+        stage('Run Tests') {
             steps {
                 echo 'Running tests'
                 sh 'npm test'
@@ -40,12 +41,12 @@ pipeline {
             steps {
                 echo 'Triggering deployment to Render'
                 sh """
-                    curl -X POST https://api.render.com/deploy/srv-d1cpa13ipnbc73c215r0?key=${RENDER_DEPLOY_KEY}
+                    curl -X POST "https://api.render.com/deploy/srv-d1cpa13ipnbc73c215r0?key=${RENDER_DEPLOY_KEY}"
                 """
             }
         }
 
-        stage('Slack Notification') {
+        stage('Send Slack Notification') {
             steps {
                 echo 'Sending Slack notification'
                 sh """
@@ -65,19 +66,24 @@ pipeline {
                 if (env.ENABLE_EMAIL == 'true') {
                     mail to: 'kinuthia.abraham@student.moringaschool.com',
                          subject: "Jenkins Build Failed: Build #${env.BUILD_ID}",
-                         body: """The build has failed.
+                         body: """
+The build has failed.
+
 Check the Jenkins logs for more details.
 
 Project URL: ${env.RENDER_URL}
-Build URL: ${env.BUILD_URL}"""
+Build URL: ${env.BUILD_URL}
+                         """
                 }
             }
 
-            sh """
-                curl -X POST -H 'Content-type: application/json' \
-                --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
-                "${env.SLACK_WEBHOOK}"
-            """
+            node {
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
+                    "${env.SLACK_WEBHOOK}"
+                """
+            }
         }
     }
 }
