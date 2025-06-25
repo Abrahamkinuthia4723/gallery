@@ -15,30 +15,26 @@ pipeline {
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Clone code') {
             steps {
-                echo 'Cloning repository'
-                git 'https://github.com/Abrahamkinuthia4723/gallery.git'
+                git branch: 'master', url: 'https://github.com/Abrahamkinuthia4723/gallery.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                echo 'Installing dependencies'
                 sh 'npm install'
             }
         }
 
-        stage('Build Project') {
+        stage('Build code') {
             steps {
-                echo 'Building the project'
                 sh 'npm run build'
             }
         }
 
         stage('Run Tests') {
             steps {
-                echo 'Running tests'
                 sh 'npm test'
             }
         }
@@ -48,7 +44,6 @@ pipeline {
                 NODE_ENV = 'production'
             }
             steps {
-                echo 'Triggering deployment to Render'
                 sh """
                     curl -X POST "${RENDER_DEPLOY_URL}?key=${RENDER_DEPLOY_KEY}"
                 """
@@ -57,7 +52,6 @@ pipeline {
 
         stage('Send Slack Notification') {
             steps {
-                echo 'Sending Slack notification'
                 sh """
                     curl -X POST -H 'Content-type: application/json' \
                     --data '{"text":"Build #${env.BUILD_ID} deployed successfully.\\nProject URL: ${env.RENDER_URL}"}' \
@@ -68,9 +62,15 @@ pipeline {
     }
 
     post {
-        failure {
-            echo 'Build failed. Sending notifications.'
+        success {
+            sh """
+                curl -X POST -H 'Content-type: application/json' \
+                --data '{"text":"Build #${env.BUILD_ID} SUCCESS.\\nProject URL: ${env.RENDER_URL}"}' \
+                ${SLACK_WEBHOOK}
+            """
+        }
 
+        failure {
             script {
                 if (env.ENABLE_EMAIL == 'true') {
                     emailext(
@@ -86,7 +86,6 @@ Build URL: ${env.BUILD_URL}""",
                 }
             }
 
-            echo 'Sending Slack failure notification'
             sh """
                 curl -X POST -H 'Content-type: application/json' \
                 --data '{"text":"Build #${env.BUILD_ID} FAILED.\\nCheck logs: ${env.BUILD_URL}"}' \
