@@ -10,44 +10,47 @@ pipeline {
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         SLACK_CHANNEL = "#Kinuthia_IP1"
         SLACK_WEBHOOK = credentials('slack-webhook')
-        ENABLE_EMAIL = "false"  
+        RENDER_DEPLOY_KEY = credentials('render-api-key')
+        ENABLE_EMAIL = "false"
     }
 
     stages {
         stage('Install Dependencies') {
             steps {
-                echo '📦 Installing dependencies...'
+                echo 'Installing dependencies'
                 sh 'npm install'
             }
         }
 
         stage('Build') {
             steps {
-                echo '🔨 Building the project...'
-                sh 'npm run build || echo "⚠️ No build script found, skipping..."'
+                echo 'Building the project'
+                sh 'npm run build'
             }
         }
 
         stage('Test') {
             steps {
-                echo '🧪 Running tests...'
-                sh 'npm test || echo "⚠️ Tests failed or mocha not found, skipping..."'
+                echo 'Running tests'
+                sh 'npm test'
             }
         }
 
         stage('Deploy to Render') {
             steps {
-                echo '🚀 Triggering Render deploy...'
-                sh 'curl -X POST https://api.render.com/deploy/srv-d1cpa13ipnbc73c215r0?key=lQznZCqpkmE'
+                echo 'Triggering deployment to Render'
+                sh """
+                    curl -X POST https://api.render.com/deploy/srv-d1cpa13ipnbc73c215r0?key=${RENDER_DEPLOY_KEY}
+                """
             }
         }
 
         stage('Slack Notification') {
             steps {
-                echo '📢 Sending Slack notification...'
+                echo 'Sending Slack notification'
                 sh """
                     curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text": "✅ *Build #${env.BUILD_ID}* deployed successfully!\\n🔗 ${env.RENDER_URL}"}' \
+                    --data '{"text": "Build #${env.BUILD_ID} deployed successfully. Project URL: ${env.RENDER_URL}"}' \
                     "${env.SLACK_WEBHOOK}"
                 """
             }
@@ -56,14 +59,14 @@ pipeline {
 
     post {
         failure {
-            echo '❌ Build failed. Sending notifications...'
+            echo 'Build failed. Sending notifications.'
 
             script {
                 if (env.ENABLE_EMAIL == 'true') {
                     mail to: 'kinuthia.abraham@student.moringaschool.com',
-                         subject: "❌ Jenkins Build Failed: Build #${env.BUILD_ID}",
-                         body: """Build failed.
-Check Jenkins logs to debug the issue.
+                         subject: "Jenkins Build Failed: Build #${env.BUILD_ID}",
+                         body: """The build has failed.
+Check the Jenkins logs for more details.
 
 Project URL: ${env.RENDER_URL}
 Build URL: ${env.BUILD_URL}"""
@@ -72,7 +75,7 @@ Build URL: ${env.BUILD_URL}"""
 
             sh """
                 curl -X POST -H 'Content-type: application/json' \
-                --data '{"text": "❌ *Build #${env.BUILD_ID} FAILED!*\\nCheck logs: ${env.BUILD_URL}"}' \
+                --data '{"text": "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"}' \
                 "${env.SLACK_WEBHOOK}"
             """
         }
