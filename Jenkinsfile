@@ -48,9 +48,9 @@ pipeline {
             }
             steps {
                 echo 'Triggering deployment to Render...'
-                sh '''
+                sh """
                     curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"
-                '''
+                """
             }
         }
     }
@@ -58,11 +58,11 @@ pipeline {
     post {
         success {
             echo 'Build succeeded. Sending Slack notification...'
-            sh '''
+            sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data "{\"text\":\"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL\"}" \
+                --data '{"text":"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL"}' \
                 $SLACK_WEBHOOK
-            '''
+            """
         }
 
         failure {
@@ -81,11 +81,11 @@ Build URL: ${env.BUILD_URL}""",
                     )
                 }
             }
-            sh '''
+            sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data "{\"text\":\"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL\"}" \
+                --data '{"text":"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL"}' \
                 $SLACK_WEBHOOK
-            '''
+            """
         }
     }
 }
