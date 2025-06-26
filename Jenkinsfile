@@ -16,7 +16,7 @@ pipeline {
     stages {
         stage('Clone code') {
             steps {
-                echo 'Cloning repository...'
+                echo 'Cloning code...'
                 git branch: 'master', url: 'https://github.com/Abrahamkinuthia4723/gallery.git'
             }
         }
