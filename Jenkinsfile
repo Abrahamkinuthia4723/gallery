@@ -9,7 +9,6 @@ pipeline {
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         RENDER_DEPLOY_URL = credentials('render-deploy-url')
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
-        SLACK_CHANNEL = "#Kinuthia_IP1"
         SLACK_WEBHOOK = credentials('slack-webhook')
         ENABLE_EMAIL = "false"
     }
