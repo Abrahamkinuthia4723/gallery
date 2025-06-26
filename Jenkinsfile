@@ -11,37 +11,41 @@ pipeline {
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
         SLACK_WEBHOOK = credentials('slack-webhook')
         ENABLE_EMAIL = "false"
-        NODE_ENV = "production"
     }
 
     stages {
-        stage('Clone') {
+        stage('Clone code') {
             steps {
                 git branch: 'master', url: 'https://github.com/Abrahamkinuthia4723/gallery.git'
             }
         }
 
-        stage('Install') {
+        stage('Install Dependencies') {
             steps {
                 sh 'npm install'
             }
         }
 
-        stage('Build') {
+        stage('Build code') {
             steps {
                 sh 'npm run build'
             }
         }
 
-        stage('Test') {
+        stage('Test code') {
             steps {
                 sh 'npm test'
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Render') {
+            environment {
+                NODE_ENV = 'production'
+            }
             steps {
-                sh "curl -X POST '$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY'"
+                sh """
+                    curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"
+                """
             }
         }
     }
@@ -50,7 +54,7 @@ pipeline {
         success {
             sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID succeeded and deployed. \\nProject: $RENDER_URL"}' \
+                --data '{"text":"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL"}' \
                 $SLACK_WEBHOOK
             """
         }
@@ -59,8 +63,11 @@ pipeline {
             script {
                 if (env.ENABLE_EMAIL == 'true') {
                     emailext(
-                        subject: "Build Failed: #${env.BUILD_ID}",
-                        body: "The build has failed.\nProject: ${env.RENDER_URL}\nLogs: ${env.BUILD_URL}",
+                        subject: "Jenkins Build Failed: #${env.BUILD_ID}",
+                        body: """The build has failed.
+
+Project URL: ${env.RENDER_URL}
+Build URL: ${env.BUILD_URL}""",
                         to: "kinuthia.abraham@student.moringaschool.com",
                         mimeType: 'text/plain',
                         attachLog: true
@@ -69,7 +76,7 @@ pipeline {
             }
             sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID FAILED. \\nLogs: $BUILD_URL"}' \
+                --data '{"text":"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL"}' \
                 $SLACK_WEBHOOK
             """
         }
