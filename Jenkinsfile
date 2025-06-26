@@ -11,70 +11,56 @@ pipeline {
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
         SLACK_WEBHOOK = credentials('slack-webhook')
         ENABLE_EMAIL = "false"
+        NODE_ENV = "production"
     }
 
     stages {
-        stage('Clone code') {
+        stage('Clone') {
             steps {
-                echo 'Cloning code...'
                 git branch: 'master', url: 'https://github.com/Abrahamkinuthia4723/gallery.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install') {
             steps {
-                echo 'Installing dependencies...'
                 sh 'npm install'
             }
         }
 
-        stage('Build code') {
+        stage('Build') {
             steps {
-                echo 'Building code...'
                 sh 'npm run build'
             }
         }
 
-        stage('Test code') {
+        stage('Test') {
             steps {
-                echo 'Running tests...'
                 sh 'npm test'
             }
         }
 
-        stage('Deploy to Render') {
-            environment {
-                NODE_ENV = 'production'
-            }
+        stage('Deploy') {
             steps {
-                echo 'Triggering deployment to Render...'
-                sh """
-                    curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"
-                """
+                sh "curl -X POST '$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY'"
             }
         }
     }
 
     post {
         success {
-            echo 'Build succeeded. Sending Slack notification...'
             sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL"}' \
+                --data '{"text":"Build #$BUILD_ID succeeded and deployed. \\nProject: $RENDER_URL"}' \
                 $SLACK_WEBHOOK
             """
         }
 
         failure {
-            echo 'Build failed. Sending notifications...'
             script {
                 if (env.ENABLE_EMAIL == 'true') {
                     emailext(
-                        subject: "Jenkins Build Failed: #${env.BUILD_ID}",
-                        body: """The build has failed.
-
-Project URL: ${env.RENDER_URL}
-Build URL: ${env.BUILD_URL}""",
+                        subject: "Build Failed: #${env.BUILD_ID}",
+                        body: "The build has failed.\nProject: ${env.RENDER_URL}\nLogs: ${env.BUILD_URL}",
                         to: "kinuthia.abraham@student.moringaschool.com",
                         mimeType: 'text/plain',
                         attachLog: true
@@ -83,7 +69,7 @@ Build URL: ${env.BUILD_URL}""",
             }
             sh """
                 curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL"}' \
+                --data '{"text":"Build #$BUILD_ID FAILED. \\nLogs: $BUILD_URL"}' \
                 $SLACK_WEBHOOK
             """
         }
