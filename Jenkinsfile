@@ -8,8 +8,8 @@ pipeline {
     environment {
         RENDER_URL = "https://gallery-1-cxp1.onrender.com"
         RENDER_DEPLOY_URL = credentials('render-deploy-url')
-        SLACK_CHANNEL = "#Kinuthia_IP1"
         RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
+        SLACK_CHANNEL = "#Kinuthia_IP1"
         SLACK_WEBHOOK = credentials('slack-webhook')
         ENABLE_EMAIL = "false"
     }
@@ -49,9 +49,9 @@ pipeline {
             }
             steps {
                 echo 'Triggering deployment to Render...'
-                sh """
-                    curl -X POST "${RENDER_DEPLOY_URL}?key=${RENDER_DEPLOY_KEY}"
-                """
+                sh '''
+                    curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"
+                '''
             }
         }
     }
@@ -59,11 +59,11 @@ pipeline {
     post {
         success {
             echo 'Build succeeded. Sending Slack notification...'
-            sh """
-                curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"Build #${env.BUILD_ID} deployed successfully.\\nProject URL: ${env.RENDER_URL}"}' \
-                ${SLACK_WEBHOOK}
-            """
+            sh '''
+                curl -X POST -H "Content-type: application/json" \
+                --data "{\"text\":\"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL\"}" \
+                $SLACK_WEBHOOK
+            '''
         }
 
         failure {
@@ -82,11 +82,11 @@ Build URL: ${env.BUILD_URL}""",
                     )
                 }
             }
-            sh """
-                curl -X POST -H 'Content-type: application/json' \
-                --data '{"text":"Build #${env.BUILD_ID} FAILED.\\nCheck logs: ${env.BUILD_URL}"}' \
-                ${SLACK_WEBHOOK}
-            """
+            sh '''
+                curl -X POST -H "Content-type: application/json" \
+                --data "{\"text\":\"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL\"}" \
+                $SLACK_WEBHOOK
+            '''
         }
     }
 }
