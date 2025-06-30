@@ -45,7 +45,8 @@ pipeline {
     post {
         success {
             script {
-                def (slackWebhook, renderUrl) = [credentials('slack-webhook'), 'https://gallery-1-cxp1.onrender.com']
+                def slackWebhook = credentials('slack-webhook')
+                def renderUrl = 'https://gallery-1-cxp1.onrender.com'
                 def msg = "Build #${env.BUILD_ID} deployed successfully. Project URL: ${renderUrl}"
                 sh """curl -X POST -H "Content-type: application/json" --data '{"text":"${msg}"}' ${slackWebhook}"""
             }
@@ -53,7 +54,9 @@ pipeline {
 
         failure {
             script {
-                def (slackWebhook, renderUrl, enableEmail) = [credentials('slack-webhook'), 'https://gallery-1-cxp1.onrender.com', false]
+                def slackWebhook = credentials('slack-webhook')
+                def renderUrl = 'https://gallery-1-cxp1.onrender.com'
+                def enableEmail = false
 
                 if (enableEmail) {
                     emailext(
