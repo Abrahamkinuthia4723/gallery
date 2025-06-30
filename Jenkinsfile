@@ -44,40 +44,41 @@ pipeline {
 
     post {
         success {
-            script {
-                def slackWebhook = credentials('slack-webhook')
-                def renderUrl = 'https://gallery-1-cxp1.onrender.com'
-                def msg = "Build #${env.BUILD_ID} deployed successfully. Project URL: ${renderUrl}"
-
-                sh """
-                    curl -X POST -H "Content-type: application/json" \
-                    --data '{"text":"${msg}"}' ${slackWebhook}
-                """
+            steps {
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
+                    script {
+                        def msg = "Build #${env.BUILD_ID} deployed successfully. Project URL: https://gallery-1-cxp1.onrender.com"
+                        sh """
+                            curl -X POST -H "Content-type: application/json" \
+                            --data '{"text":"${msg}"}' $SLACK_WEBHOOK
+                        """
+                    }
+                }
             }
         }
 
         failure {
-            script {
-                def slackWebhook = credentials('slack-webhook')
-                def renderUrl = 'https://gallery-1-cxp1.onrender.com'
-                def enableEmail = false
+            steps {
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_WEBHOOK')]) {
+                    script {
+                        def msg = "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"
+                        sh """
+                            curl -X POST -H "Content-type: application/json" \
+                            --data '{"text":"${msg}"}' $SLACK_WEBHOOK
+                        """
 
-                if (enableEmail) {
-                    emailext(
-                        subject: "Jenkins Build Failed: #${env.BUILD_ID}",
-                        body: "The build has failed.\n\nProject URL: ${renderUrl}\nBuild URL: ${env.BUILD_URL}",
-                        to: "kinuthia.abraham@student.moringaschool.com",
-                        mimeType: 'text/plain',
-                        attachLog: true
-                    )
+                        def enableEmail = false
+                        if (enableEmail) {
+                            emailext(
+                                subject: "Jenkins Build Failed: #${env.BUILD_ID}",
+                                body: "The build has failed.\n\nBuild URL: ${env.BUILD_URL}",
+                                to: "kinuthia.abraham@student.moringaschool.com",
+                                mimeType: 'text/plain',
+                                attachLog: true
+                            )
+                        }
+                    }
                 }
-
-                def msg = "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"
-
-                sh """
-                    curl -X POST -H "Content-type: application/json" \
-                    --data '{"text":"${msg}"}' ${slackWebhook}
-                """
             }
         }
     }
