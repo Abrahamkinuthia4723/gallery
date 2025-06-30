@@ -5,14 +5,6 @@ pipeline {
         nodejs "NodeJS 18"
     }
 
-    environment {
-        RENDER_URL = "https://gallery-1-cxp1.onrender.com"
-        RENDER_DEPLOY_URL = credentials('render-deploy-url')
-        RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
-        SLACK_WEBHOOK = credentials('slack-webhook')
-        ENABLE_EMAIL = "false"
-    }
-
     stages {
         stage('Clone code') {
             steps {
@@ -41,44 +33,41 @@ pipeline {
         stage('Deploy to Render') {
             environment {
                 NODE_ENV = 'production'
+                RENDER_DEPLOY_URL = credentials('render-deploy-url')
+                RENDER_DEPLOY_KEY = credentials('render-deploy-hook')
             }
             steps {
-                sh """
-                    curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"
-                """
+                sh 'curl -X POST "$RENDER_DEPLOY_URL?key=$RENDER_DEPLOY_KEY"'
             }
         }
     }
 
     post {
         success {
-            sh """
-                curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID deployed successfully.\\nProject URL: $RENDER_URL"}' \
-                $SLACK_WEBHOOK
-            """
+            script {
+                def (slackWebhook, renderUrl) = [credentials('slack-webhook'), 'https://gallery-1-cxp1.onrender.com']
+                def msg = "Build #${env.BUILD_ID} deployed successfully. Project URL: ${renderUrl}"
+                sh """curl -X POST -H "Content-type: application/json" --data '{"text":"${msg}"}' ${slackWebhook}"""
+            }
         }
 
         failure {
             script {
-                if (env.ENABLE_EMAIL == 'true') {
+                def (slackWebhook, renderUrl, enableEmail) = [credentials('slack-webhook'), 'https://gallery-1-cxp1.onrender.com', false]
+
+                if (enableEmail) {
                     emailext(
                         subject: "Jenkins Build Failed: #${env.BUILD_ID}",
-                        body: """The build has failed.
-
-Project URL: ${env.RENDER_URL}
-Build URL: ${env.BUILD_URL}""",
+                        body: "The build has failed.\n\nProject URL: ${renderUrl}\nBuild URL: ${env.BUILD_URL}",
                         to: "kinuthia.abraham@student.moringaschool.com",
                         mimeType: 'text/plain',
                         attachLog: true
                     )
                 }
+
+                def msg = "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"
+                sh """curl -X POST -H "Content-type: application/json" --data '{"text":"${msg}"}' ${slackWebhook}"""
             }
-            sh """
-                curl -X POST -H "Content-type: application/json" \
-                --data '{"text":"Build #$BUILD_ID FAILED.\\nCheck logs: $BUILD_URL"}' \
-                $SLACK_WEBHOOK
-            """
         }
     }
 }
