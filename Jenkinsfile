@@ -48,7 +48,11 @@ pipeline {
                 def slackWebhook = credentials('slack-webhook')
                 def renderUrl = 'https://gallery-1-cxp1.onrender.com'
                 def msg = "Build #${env.BUILD_ID} deployed successfully. Project URL: ${renderUrl}"
-                sh """curl -X POST -H "Content-type: application/json" --data '{"text":"${msg}"}' ${slackWebhook}"""
+
+                sh """
+                    curl -X POST -H "Content-type: application/json" \
+                    --data '{"text":"${msg}"}' ${slackWebhook}
+                """
             }
         }
 
@@ -69,7 +73,11 @@ pipeline {
                 }
 
                 def msg = "Build #${env.BUILD_ID} FAILED. Check logs: ${env.BUILD_URL}"
-                sh """curl -X POST -H "Content-type: application/json" --data '{"text":"${msg}"}' ${slackWebhook}"""
+
+                sh """
+                    curl -X POST -H "Content-type: application/json" \
+                    --data '{"text":"${msg}"}' ${slackWebhook}
+                """
             }
         }
     }
