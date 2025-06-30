@@ -43,18 +43,20 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            slackSend (
-                channel: '#all-student',
-                message: "Build #${env.BUILD_ID} succeeded for ${env.JOB_NAME}.\nProject URL: https://gallery-1-cxp1.onrender.com"
-            )
-        }
-        failure {
-            slackSend (
-                channel: '#all-student',
-                message: "Build #${env.BUILD_ID} failed for ${env.JOB_NAME}.\nCheck logs: ${env.BUILD_URL}"
-            )
+   post {
+    success {
+        slackSend (
+            channel: '#kinuthia_ip1',
+            message: "Build #${env.BUILD_ID} succeeded for ${env.JOB_NAME}.\nProject URL: https://gallery-1-cxp1.onrender.com"
+        )
+    }
+    failure {
+        slackSend (
+            channel: '#kinuthia_ip1',
+            message: "Build #${env.BUILD_ID} failed for ${env.JOB_NAME}.\nCheck logs: ${env.BUILD_URL}"
+        )
+    }
+}
 
             script {
                 if (env.ENABLE_EMAIL == 'true') {
@@ -68,5 +70,4 @@ pipeline {
                 }
             }
         }
-    }
-}
+
